@@ -2,6 +2,8 @@ package com.courysky.ycommonutils.ui;
 
 import java.lang.ref.SoftReference;
 
+import com.courysky.ycommonutils.LogHelper;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
@@ -26,7 +28,7 @@ public class UIUtil {
 		    DisplayMetrics dm = context.getResources().getDisplayMetrics();  
             sScreenWidth = dm.widthPixels;  
             sScreenHeight = dm.heightPixels;  
-            Log.i(TAG, "屏幕尺寸2：宽度 = " + sScreenWidth + "高度 = " + sScreenHeight + "密度 = " + dm.densityDpi);
+            LogHelper.i(TAG, "屏幕尺寸2：宽度 = " + sScreenWidth + "高度 = " + sScreenHeight + "密度 = " + dm.densityDpi);
 		}
 		return sScreenHeight;
 	}
@@ -34,7 +36,7 @@ public class UIUtil {
 	/**
 	 */
     public static int getScreenWidth(Context context){
-        //LINK http://blog.csdn.net/yanzi1225627/article/details/17199323
+        //LINK http://bLogHelper.csdn.net/yanzi1225627/article/details/17199323
     	if (sScreenWidth>0) {
 			
 		} else {
@@ -45,7 +47,7 @@ public class UIUtil {
 			DisplayMetrics dm = context.getResources().getDisplayMetrics();  
 			sScreenWidth = dm.widthPixels;  
 			sScreenHeight = dm.heightPixels;  
-	        Log.i(TAG, "屏幕尺寸2：宽度 = " + sScreenWidth + "高度 = " + sScreenHeight + "密度 = " + dm.densityDpi);
+	        LogHelper.i(TAG, "屏幕尺寸2：宽度 = " + sScreenWidth + "高度 = " + sScreenHeight + "密度 = " + dm.densityDpi);
 		}
 		return sScreenWidth;
     }

@@ -18,6 +18,8 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.protocol.HTTP;
 
+import com.courysky.ycommonutils.LogHelper;
+
 import android.util.Log;
 
 public class HttpHelper extends Observable{
@@ -66,7 +68,7 @@ public class HttpHelper extends Observable{
 				stringEntity = new StringEntity(_entryStr, HTTP.UTF_8);
 				httpPost.setEntity(stringEntity);
 			}
-			Log.i(TAG, httpPost.getURI().toString());
+			LogHelper.i(TAG, httpPost.getURI().toString());
 			// 请求超时
 			mHttpClient.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 10000);
             // 读取超时
@@ -87,7 +89,7 @@ public class HttpHelper extends Observable{
 						buffer.append(line);
 					}
 					responseContent = buffer.toString();
-					Log.i(TAG,"ResContent :"+responseContent);
+					LogHelper.i(TAG,"ResContent :"+responseContent);
 				} else {
 					
 				}

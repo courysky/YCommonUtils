@@ -10,7 +10,10 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import com.courysky.ycommonutils.LogHelper;
 import com.courysky.ycommonutils.file.FileUtil;
 import com.courysky.ycommonutils.net.FileDownloader;
 import com.courysky.ycommonutils.ui.UIUtil;
@@ -21,7 +24,6 @@ import android.media.ExifInterface;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 public class AsyncImageLoader {
 	private static final String TAG = AsyncImageLoader.class.getSimpleName();
@@ -35,17 +37,20 @@ public class AsyncImageLoader {
 
 	private List<String> taskList = new ArrayList<String>();
 	
+	//TODO [yaojian] shut down
+	private ExecutorService executorService;
+	
 	public AsyncImageLoader() {
 		sImageCacheMap = new HashMap<String, SoftReference<Bitmap>>();
 		String state = Environment.getExternalStorageState();
 		if (state.equals(Environment.MEDIA_MOUNTED)) {
 			//TODO [yaojian] 更改cache目录
 			localCacheDir = Environment.getExternalStorageDirectory()
-					+ File.separator + "ycommon" + File.separator + "cache";
+					+ File.separator + ".ycommon" + File.separator + "cache";
 		} else {
-			localCacheDir = Environment.getDownloadCacheDirectory()+File.separator + "ycommon" + File.separator + "cache";
+			localCacheDir = Environment.getDownloadCacheDirectory()+File.separator + ".ycommon" + File.separator + "cache";
 		}
-		
+		executorService = Executors.newFixedThreadPool(12);
 	}
 	
 	/**
@@ -71,6 +76,7 @@ public class AsyncImageLoader {
 
 	
 	/**
+	 * This method is asynchronous
 	 * @param _path
 	 * @param _thumbWidth <=0 means return original image
 	 * @param _thumbHeight not useful right now
@@ -80,18 +86,18 @@ public class AsyncImageLoader {
 	 */
 	public Bitmap loadImage(final String _path,final int _thumbWidth, final int _thumbHeight
 			,final float _degree , final LoadBitmapOverCallback _loadBitmapOverCallback, boolean _isJustFromCache) {
-		Log.v(TAG, "--- loadBitmap :"+_path);
+		LogHelper.v(TAG, "--- loadBitmap :"+_path);
 		synchronized (lock) {
 			// XXX [yaojian] _path + _thumbWidth + _thumbHeight 组成 key
 			if (taskList.contains(_path)) {
-				Log.i(TAG, "task already contain :"+_path);
+				LogHelper.i(TAG, "task already contain :"+_path);
 				return null;
 			} else {
-				Log.i(TAG, "add task :"+_path);
+				LogHelper.i(TAG, "add task :"+_path);
 				taskList.add(_path);
 			}
 //			if (sImageCacheMap.size() > 100) {
-//				Log.w(TAG, "sImageCacheMap size : "+sImageCacheMap.size());
+//				LogHelper.w(TAG, "sImageCacheMap size : "+sImageCacheMap.size());
 //				synchronized (cacheLock) {
 //					
 //					
@@ -111,7 +117,7 @@ public class AsyncImageLoader {
 		}
 		Bitmap defultBitmap = null;
 		if (sImageCacheMap.containsKey(_path)) {
-			Log.v(TAG, "sImageCacheMap containsKey :"+_path);
+			LogHelper.v(TAG, "sImageCacheMap containsKey :"+_path);
 			SoftReference<Bitmap> softReference = sImageCacheMap.get(_path);
 			Bitmap cacheBitmap = softReference.get();
 			if (null != cacheBitmap && !cacheBitmap.isRecycled()) {
@@ -119,7 +125,7 @@ public class AsyncImageLoader {
 					taskList.remove(_path);
 					return cacheBitmap;
 //				} else {
-//					Log.w(TAG, "Bitmap bitmap is recyled !!!");
+//					LogHelper.w(TAG, "Bitmap bitmap is recyled !!!");
 //					synchronized (cacheLock) {
 //						sImageCacheMap.remove(_path);
 //					}
@@ -139,7 +145,7 @@ public class AsyncImageLoader {
 
 			@Override
 			public void handleMessage(Message msg) {
-				Log.d(TAG, "--- handleMessage path:"+_path+" " + " Bitmap :"+msg.obj);
+				LogHelper.d(TAG, "--- handleMessage path:"+_path+" " + " Bitmap :"+msg.obj);
 				Bitmap bitmap = (Bitmap)msg.obj;
 				
 				if (null != _loadBitmapOverCallback) {
@@ -147,13 +153,15 @@ public class AsyncImageLoader {
 				}
 				
 				boolean isRemoveSuccess = taskList.remove(_path);
-				Log.d(TAG, "remove :" + _path+ " "+isRemoveSuccess);
+				LogHelper.d(TAG, "remove :" + _path+ " "+isRemoveSuccess);
 			}
 		};
 		
-		new Thread(new LoadBitmapRunnable(_path, _thumbWidth, _thumbHeight, _degree,
-				handler, _loadBitmapOverCallback)).start();
-		
+//		new Thread(new LoadBitmapRunnable(_path, _thumbWidth, _thumbHeight, _degree,
+//				handler, _loadBitmapOverCallback)).start();
+		Runnable thread = new LoadBitmapRunnable(_path, _thumbWidth, _thumbHeight, _degree,
+				handler, _loadBitmapOverCallback);
+		executorService.execute(thread);
 		
 		return defultBitmap;
 	}
@@ -189,12 +197,12 @@ public class AsyncImageLoader {
 		
 		@Override
 		public void run() {
-			Log.v(TAG, "--- LoadBitmapRunnable run path :"+path);
+			LogHelper.v(TAG, "--- LoadBitmapRunnable run path :"+path+" cur thread :"+ Thread.currentThread().getName());
 			Bitmap bitmap = null;
 			
 			try {
 				if (path == null) {
-					Log.e(TAG, "path is null");
+					LogHelper.e(TAG, "path is null");
 				} else {
 				    /*
 				     * XXX [yaojian] data: url http://flysnowxf.iteye.com/blog/1271810
@@ -232,14 +240,14 @@ public class AsyncImageLoader {
 						} else {
 							
 						}
-			            Log.i(TAG, "image download finished." + path);
+			            LogHelper.i(TAG, "image download finished." + path);
 			            if (cacheFile.exists()) {
 							BitmapFactory.Options options = new BitmapFactory.Options();
 							options.inJustDecodeBounds = true;
 							
 							BitmapFactory.decodeFile(cacheFile.getAbsolutePath(), options);
 							
-							Log.i(TAG, "bitmap options.height : "+options.outHeight + " options.outWidth :"+ options.outWidth);
+							LogHelper.i(TAG, "bitmap options.height : "+options.outHeight + " options.outWidth :"+ options.outWidth);
 							int realWidth = options.outWidth;
 							
 							
@@ -301,7 +309,7 @@ public class AsyncImageLoader {
 								e.printStackTrace();
 							}
 						} else {
-							Log.e(TAG, "Path does not exist ! "+path);
+							LogHelper.e(TAG, "Path does not exist ! "+path);
 						}
 			            
 					} else {
@@ -318,9 +326,8 @@ public class AsyncImageLoader {
 							
 							BitmapFactory.decodeFile(path, options);
 							
-							Log.i(TAG, "bitmap options.height : "+options.outHeight + " options.outWidth :"+ options.outWidth);
+							LogHelper.i(TAG, "bitmap options.height : "+options.outHeight + " options.outWidth :"+ options.outWidth);
 							int realWidth = options.outWidth;
-							
 							
 							options.inPurgeable = true;
 							options.inInputShareable = true; 
@@ -328,29 +335,62 @@ public class AsyncImageLoader {
 							options.inPreferredConfig = Bitmap.Config.RGB_565;
 							
 							options.inJustDecodeBounds = false;
-//							options.outHeight = 300;
-//							options.outWidth = 300;
-//							options.inJustDecodeBounds = false;
-							if (thumbWidth>0) {
-								options.inSampleSize = realWidth / thumbWidth;
-							}
-							InputStream is = new FileInputStream(new File(path));
-							bitmap = BitmapFactory.decodeStream(is, null, options);
+//						options.outHeight = 300;
+//						options.outWidth = 300;
+//						options.inJustDecodeBounds = false;
 							
 
-							
-							
-							try {
-								is.close();
-							} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
+							/**
+							 * 若thumb存在则直接读取 TODO[yaojian]图片一次没保存完?
+							 */
+							StringBuilder thumbDir = new StringBuilder(localCacheDir);
+							thumbDir.append(File.separator).append(".thumb").append(thumbWidth).append("x").append(thumbHeight);
+							File thumbPath = FileUtil.getInstance().getCacheFile(path, thumbDir.toString());
+							if (thumbPath.exists() && thumbPath.length()>0) {
+
+								if (thumbWidth>0) {
+									options.inSampleSize = 1;
+								}
+								InputStream is = new FileInputStream(thumbPath);
+								bitmap = BitmapFactory.decodeStream(is, null, options);
+								
+								try {
+									is.close();
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							} else {
+
+								if (thumbWidth>0) {
+									options.inSampleSize = realWidth / thumbWidth;
+								}
+								
+								
+								InputStream is = new FileInputStream(new File(path));
+								bitmap = BitmapFactory.decodeStream(is, null, options);
+								/**
+								 * cache thumbnail  根据压缩情况考虑是否有必要
+								 */
+								if (null != bitmap && options.inSampleSize != 1) {
+									FileUtil.saveBitmap(thumbPath.getAbsolutePath(), bitmap);
+								}
+								
+								
+								try {
+									is.close();
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+								
 							}
+							
+							
+							
 						} else {
-							Log.e(TAG, "Path does not exist ! "+path);
+							LogHelper.e(TAG, "Path does not exist ! "+path);
 						}
 					}
-					Log.d(TAG, "degree :"+degree);
+					LogHelper.d(TAG, "degree :"+degree);
 //					UIUtil.rotateBitmap(bitmap, degree);
 					Bitmap rotatedBitmap = UIUtil.rotateBitmap(bitmap, degree);
 					SoftReference<Bitmap> softReference = new SoftReference<Bitmap>(rotatedBitmap);
@@ -362,7 +402,7 @@ public class AsyncImageLoader {
 				}
 				
 			} catch (OutOfMemoryError e) {
-				Log.e(TAG, " e :"+e.getMessage());
+				LogHelper.e(TAG, " e :"+e.getMessage());
 				if(bitmap != null ){
 					bitmap = null;
 				}
@@ -374,7 +414,7 @@ public class AsyncImageLoader {
 				
 			}
 			catch (FileNotFoundException e) {
-				Log.e(TAG, "File not found e:"+e.getMessage());
+				LogHelper.e(TAG, "File not found e:"+e.getMessage());
 				e.printStackTrace();
 			} catch (MalformedURLException e) {
 				// TODO Auto-generated catch block

@@ -1,16 +1,22 @@
 package com.courysky.ycommonutils.bitmap;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.courysky.ycommonutils.LogHelper;
+
+import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Environment;
 import android.util.Log;
 import android.widget.ImageView;
 
 public class AsyncImageDisplayManager {
 	private static final String TAG = AsyncImageDisplayManager.class.getSimpleName();
 	private AsyncImageLoader asyncImageLoader ;
+	private String localCacheDir ;
 	
 	/**
 	 * 映射图对应要显示的IamgeView列表
@@ -35,13 +41,12 @@ public class AsyncImageDisplayManager {
 //		if (null == tagPath) {
 //			imageView.setTag(path);
 //		}
-		
 
 //		if (null == imageView.getTag()) {
 			imageView.setTag(path);
 //		}
 		final String tagPath = (String) imageView.getTag();
-		Log.d(TAG, "tagPath :"+ tagPath+" || path :"+path);
+		LogHelper.d(TAG, "tagPath :"+ tagPath+" || path :"+path);
 
 		
 		if (imageDisplayMap.containsKey(path)) {
@@ -53,13 +58,24 @@ public class AsyncImageDisplayManager {
 			imageViewList.add(imageViewSetter);
 			imageDisplayMap.put(path, imageViewList);
 		}
-		
+
+		if (null == localCacheDir || localCacheDir.equals("")) {
+			Context context = imageView.getContext();
+			File cacheDir ;
+			if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
+				cacheDir = context.getExternalCacheDir();
+			} else {
+				cacheDir = context.getCacheDir();
+			}
+			File imgCacheDir = new File(cacheDir, ".image");
+			setLocalCacheDir(imgCacheDir.getAbsolutePath());
+		}
 		Bitmap bitmap = asyncImageLoader.loadImage(path, bitmapWidth, bitmapHeight,degree,
 				new AsyncImageLoader.LoadBitmapOverCallback() {
 			
 			@Override
 			public void onLoadBitmapOver(Bitmap _bitmap, String _imgPath) {
-				Log.d(TAG, "tagPath :"+ tagPath+" || _imgPath :"+_imgPath);
+				LogHelper.d(TAG, "tagPath :"+ tagPath+" || _imgPath :"+_imgPath);
 				ImageView coverImageView = null;
 //				if (null == tagPath) {
 //					coverImageView = (ImageView) parentView.findViewWithTag(_imgPath);
@@ -69,10 +85,10 @@ public class AsyncImageDisplayManager {
 //				if (null != coverImageView) {
 //					coverImageView.setImageBitmap(_bitmap);
 //					if (null == _bitmap) {
-//						Log.w(TAG, " bitmap is null ! _imgPath :"+_imgPath);
+//						LogHelper.w(TAG, " bitmap is null ! _imgPath :"+_imgPath);
 //					}
 //				} else {
-//					Log.w(TAG, "path not null ,imageView is null:"+_imgPath+ " |tagPath :"+tagPath+" |tagPath :"+(String)imageView.getTag());
+//					LogHelper.w(TAG, "path not null ,imageView is null:"+_imgPath+ " |tagPath :"+tagPath+" |tagPath :"+(String)imageView.getTag());
 //				}
 				
 				/**
@@ -111,11 +127,13 @@ public class AsyncImageDisplayManager {
 	}
 	
 	public void setLocalCacheDir(String cacheDir) {
+		localCacheDir = cacheDir;
 		asyncImageLoader.setLocalCacheDir(cacheDir);
 	}
 	
 	public String getLocalCacheDir() {
-		return asyncImageLoader.getLocalCacheDir();
+		localCacheDir = asyncImageLoader.getLocalCacheDir();
+		return localCacheDir;
 	}
 	
 	

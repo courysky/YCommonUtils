@@ -6,6 +6,7 @@ import java.util.Observer;
 
 import android.util.Log;
 
+import com.courysky.ycommonutils.LogHelper;
 import com.google.gson.Gson;
 
 public class HttpManager implements HttpHelper.RequestListener{
@@ -34,13 +35,13 @@ public class HttpManager implements HttpHelper.RequestListener{
 	 * @param _observer
 	 */
 	public void post(final String _action, final String _entryStr, final Observer _observer) {
-		Log.v(TAG, "--- post ："+_action);
+		LogHelper.v(TAG, "--- post ："+_action);
 		synchronized (lock) {
 			if (sRequestTask.contains(_action)) {
-				Log.w(TAG, "already contain params :"+ _action);
+				LogHelper.w(TAG, "already contain params :"+ _action);
 				return ;
 			} else {
-				Log.i(TAG, "add task :"+_action + " _entryStr :"+_entryStr);
+				LogHelper.i(TAG, "add task :"+_action + " _entryStr :"+_entryStr);
 				sRequestTask.add(_action);
 			}
 		}

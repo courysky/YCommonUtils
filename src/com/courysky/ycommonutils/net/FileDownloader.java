@@ -7,6 +7,8 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import com.courysky.ycommonutils.LogHelper;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
@@ -130,8 +132,8 @@ public class FileDownloader {
 	 */
 	public void downloadFile(String originationUrlStr, String targetPathStr, String filename)
 			throws IOException {
-		Log.v("Download","origination add :"+originationUrlStr);
-		Log.v("Download","local add :"+targetPathStr+filename);
+		LogHelper.v("Download","origination add :"+originationUrlStr);
+		LogHelper.v("Download","local add :"+targetPathStr+filename);
 		
 		/**
 		 * 验证文件名是否合法
