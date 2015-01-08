@@ -101,9 +101,10 @@ public class AsyncImageDisplayManager {
 						if (null != _bitmap) {
 							toDisplayImageView.getImageView().setImageBitmap(_bitmap);
 						}
+						
 					}
 				}
-						
+				//TODO clear toDisplayImageViewList	
 				
 			}
 		},false);
