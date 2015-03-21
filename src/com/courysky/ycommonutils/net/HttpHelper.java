@@ -20,6 +20,7 @@ import org.apache.http.protocol.HTTP;
 
 import com.courysky.ycommonutils.LogHelper;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 public class HttpHelper extends Observable{
@@ -45,22 +46,40 @@ public class HttpHelper extends Observable{
 	}
 	
 	/**
-	 * TODO [yaojian ] we may return void
 	 * @param _action
 	 * @param _entryStr
 	 * @param _observer
 	 * @return
+	 */
+	public String post(final String _action, final String _entryStr, final Observer _observer) {
+		return this.post(_action, _entryStr, _observer, null);
+	}
+	
+	/**
+	 * TODO [yaojian ] we may return void
+	 * @param _action
+	 * @param _entryStr
+	 * @param _observer
+	 * @param _tag, used to identify post, can be empty
+	 * @return
 	 * @throws ClientProtocolException
 	 * @throws IOException
 	 */
-	public String post(String _action, String _entryStr, Observer _observer) {
+	public String post(final String _action, final String _entryStr, final Observer _observer, final String _tag) {
 		if (null != _observer) {
 //			observerList.add(_observer);
 			addObserver(_observer);
 			
 		}
 		String responseContent = null;
+//		String tag = null;
 		int statusCode = -1;
+//		if (TextUtils.isEmpty(_tag)) {
+//			tag = _action;
+//		} else {
+//			tag = _tag;
+//		}
+		
 		try {
 			HttpPost httpPost = new HttpPost(_action);//_action
 			if (null != _entryStr && !_entryStr.equals("")) {
@@ -115,7 +134,7 @@ public class HttpHelper extends Observable{
 //				e2.printStackTrace();
 //			} finally {
 				if (null != mRequestListener) {
-					mRequestListener.onPostOver(_action);
+					mRequestListener.onPostOver(_action, _tag);
 				}
 //			}
 		}
@@ -163,7 +182,7 @@ public class HttpHelper extends Observable{
 	}
 	
 	protected interface RequestListener {
-		void onPostOver(String _action);
+		void onPostOver(String _action, String _tag);
 	}
 }
 
