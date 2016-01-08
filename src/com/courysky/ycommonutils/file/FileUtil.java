@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import com.courysky.ycommonutils.LogHelper;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
@@ -58,10 +60,30 @@ public class FileUtil {
 //		 
 //		 String fileName = fileName_prefix+"_"+uri.substring(index + 1); 
 //		 cacheFile = new File(dir, fileName);  
-		 cacheFile = new File(targetDir, ""+Math.abs(uri.hashCode()));  
+		 // 生成唯一文件名,方案二
+//		 cacheFile = new File(targetDir, ""+Math.abs(uri.hashCode()));
+		// 生成唯一文件名,方案三
+		 cacheFile = new File(targetDir, getFilenameForKey(uri));
+		 LogHelper.d(TAG, "--- getCacheFile : "+uri+" "+cacheFile);
 		 return cacheFile;
 	}
-	 
+
+	/**
+	 * Creates a pseudo-unique filename for the specified cache key.
+	 * 
+	 * @param key
+	 *            The key to generate a file name for.
+	 * @return A pseudo-unique filename.
+	 */
+	private String getFilenameForKey(String key) {
+		int firstHalfLength = key.length() / 2;
+		String localFilename = String.valueOf(key.substring(0, firstHalfLength)
+				.hashCode());
+		localFilename += String.valueOf(key.substring(firstHalfLength)
+				.hashCode());
+		return localFilename;
+	}
+
 	 /**
 	  * bitmap保存到文件
 	  * 

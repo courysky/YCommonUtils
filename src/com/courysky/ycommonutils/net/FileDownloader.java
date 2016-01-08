@@ -18,7 +18,7 @@ import android.util.Log;
  * 2012/6/1
  */
 public class FileDownloader {
-
+	public static final String TAG = FileDownloader.class.getSimpleName();
 	/**下载成功*/
 	public static final int DOWN_SUCCESS = 0;
 	/**连接错误*/
@@ -138,33 +138,36 @@ public class FileDownloader {
 		/**
 		 * 验证文件名是否合法
 		 */
-		String tempFileName = filename + "_info";
+		String infoFileName = filename + "_info";
 		File tarFolder = new File(targetPathStr);
 		if (!tarFolder.exists()) {
 			tarFolder.mkdirs();
 		}
-		File tempFile = new File(targetPathStr+File.separator+tempFileName);
+		/**
+		 * 记载已经下载长度
+		 */
+		File infoFile = new File(targetPathStr+File.separator+infoFileName);
 		File targetFile = new File(targetPathStr
 				+ File.separator + filename+"_tmp");
-		if (!tempFile.exists()) {
+		if (!infoFile.exists()) {
 			if (targetFile.exists()) {
 				targetFile.delete();
 			}
 		}
-		RandomAccessFile tempAccessFile = new RandomAccessFile(tempFile, "rw");
+		RandomAccessFile infoAccessFile = new RandomAccessFile(infoFile, "rw");
 		
 		URL url = new URL(originationUrlStr);
 		HttpURLConnection httpURLConnection = (HttpURLConnection) url
 				.openConnection();
 		// 设置连接超时时间
-		httpURLConnection.setConnectTimeout(10000);
+//		httpURLConnection.setConnectTimeout(10000);
 		// 设置读取数据超时时间
-		httpURLConnection.setReadTimeout(90000);
-		// 下载的起始位�?
+//		httpURLConnection.setReadTimeout(90000);
+		// 下载的起始位置
 		long startPosition = 0;
 //		if(tempAccessFile.length() != 0)
 //		{
-			startPosition = getDownloadStartPosition(tempAccessFile);
+			startPosition = getDownloadStartPosition(infoAccessFile);
 //		}
 		httpURLConnection.setRequestProperty("Range", "bytes="+startPosition+"-");
 		int contentLength = httpURLConnection.getContentLength();
@@ -173,6 +176,7 @@ public class FileDownloader {
 		if (httpURLConnection.getResponseCode() != HttpURLConnection.HTTP_OK
 				&& httpURLConnection.getResponseCode() != HttpURLConnection.HTTP_PARTIAL) {
 			httpURLConnection.disconnect();
+			LogHelper.e(TAG, "connect error !!!");
 			return;
 		}
 		InputStream inputStream = httpURLConnection.getInputStream();
@@ -196,23 +200,24 @@ public class FileDownloader {
 			{
 				targetAccessFile.write(bytes, 0, len);
 				startPosition += len;
-				tempAccessFile.seek(0);
-				tempAccessFile.writeLong(startPosition);
+				infoAccessFile.seek(0);
+				infoAccessFile.writeLong(startPosition);
 				if (null != mOnDownloadingListerner) {
 					mOnDownloadingListerner.onDownloading((int)startPosition, contentLength);
 				}
 			}
 			if (len == -1) {
-				tempAccessFile.close();
+				infoAccessFile.close();
 				targetAccessFile.close();
 				targetFile.renameTo(new File(targetPathStr + File.separator + filename));
-				tempFile.delete();
+				infoFile.delete();
 				if (null!=mOnDownloadOverListerner) {
 					mOnDownloadOverListerner.onDownloadOver();
 				}
 			}
 		} else {
-			tempFile.delete();
+			targetFile.renameTo(new File(targetPathStr + File.separator + filename));
+			infoFile.delete();
 			if (null!=mOnDownloadOverListerner) {
 				mOnDownloadOverListerner.onDownloadOver();
 			}

@@ -50,6 +50,7 @@ public class AsyncImageLoader {
 		} else {
 			localCacheDir = Environment.getDownloadCacheDirectory()+File.separator + ".ycommon" + File.separator + "cache";
 		}
+		LogHelper.d(TAG, "--- localCacheDir : "+localCacheDir);
 		executorService = Executors.newFixedThreadPool(12);
 	}
 	
@@ -238,7 +239,7 @@ public class AsyncImageLoader {
 //			            	is.close();  
 //			            	bos.close();
 						} else {
-							
+							/** 下载失败 */
 						}
 			            LogHelper.i(TAG, "image download finished." + path);
 			            if (cacheFile.exists()) {
